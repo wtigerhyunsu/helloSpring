@@ -20,8 +20,16 @@ public class PaymentService {
     // 환율을 가져오는 방법을 다른 걸로 변경 하자(매커니즘이 변경), 외환의 금액을 어떻게 한화로 변경할지 또는 언제까지 유효한지(비즈니스 로직의 변경)
     // 이런 관심사들이 포함 되어 있다. 이를 위해서 관심사를 분리해야한다. 변경의 이유와 변경의 시점이 다른 부분에 대해서 분리해야 한다.
     public Payment prepare(Long orderId, String currency, BigDecimal foreignCurrencyAmount) throws IOException {
-        //환율 가져오기
-        URL url = new URL("https://open.er-api.com/v6/latest/"+currency);
+        BigDecimal exRate = getExRate(currency);
+        BigDecimal convertedAmount = foreignCurrencyAmount.multiply(exRate);
+        LocalDateTime validUntil = LocalDateTime.now().plusMinutes(30);
+
+        return new Payment(orderId, currency, foreignCurrencyAmount, exRate,
+                convertedAmount, validUntil);
+    }
+    //변경의 이유와 시점이 다르기 때문에 메소드로 분리
+    private BigDecimal getExRate(String currency) throws IOException {
+        URL url = new URL("https://open.er-api.com/v6/latest/"+ currency);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         String response = br.lines().collect(Collectors.joining());
@@ -30,14 +38,9 @@ public class PaymentService {
         ObjectMapper mapper = new ObjectMapper();
         ExRateData data = mapper.readValue(response,ExRateData.class);
 
-        BigDecimal exRate = data.rates().get("KRW");
-        //금액 계산
-        BigDecimal convertedAmount = foreignCurrencyAmount.multiply(exRate);
-        //유효 시간 계산
-        LocalDateTime validUntil = LocalDateTime.now().plusMinutes(30);
 
-        return new Payment(orderId, currency, foreignCurrencyAmount, exRate,
-                convertedAmount, validUntil);
+        BigDecimal exRate = data.rates().get("KRW");
+        return exRate;
     }
 
     public static void main(String[] args) throws IOException {
