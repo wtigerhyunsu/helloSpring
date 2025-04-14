@@ -16,6 +16,9 @@ import java.util.stream.Collectors;
 
 public class PaymentService {
     // 현제 코드에는 관심사가 기술적인 부분 & 비즈니스 로직이 섞여있다.
+    // 관심사는 변경에 중심적으로 생각해야한다 java HttpURLConnectio을 용하지 말고 최신 기술을 사용하자(기술적인 부분의 변경)
+    // 환율을 가져오는 방법을 다른 걸로 변경 하자(매커니즘이 변경), 외환의 금액을 어떻게 한화로 변경할지 또는 언제까지 유효한지(비즈니스 로직의 변경)
+    // 이런 관심사들이 포함 되어 있다. 이를 위해서 관심사를 분리해야한다. 변경의 이유와 변경의 시점이 다른 부분에 대해서 분리해야 한다.
     public Payment prepare(Long orderId, String currency, BigDecimal foreignCurrencyAmount) throws IOException {
         //환율 가져오기
         URL url = new URL("https://open.er-api.com/v6/latest/"+currency);
