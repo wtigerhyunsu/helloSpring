@@ -2,6 +2,7 @@ package tobyspring.hellospring.payment;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import tobyspring.hellospring.api.ApiExecutor;
 import tobyspring.hellospring.api.SimpleApiExecutor;
 import tobyspring.hellospring.exrate.ExRateData;
 
@@ -19,10 +20,10 @@ public class WebApiExRateProvider implements ExRateProvider {
     public BigDecimal getExRate(String currency) {
         String url = "https://open.er-api.com/v6/latest/"+ currency;
         // Validate the currency code
-        return runApiForExRate(url);
+        return runApiForExRate(url, new SimpleApiExecutor());
     }
 
-    private static BigDecimal runApiForExRate(String url) {
+    private static BigDecimal runApiForExRate(String url, ApiExecutor apiExecutor) {
         URL uri;
         try {
             uri = new URL(url);
@@ -31,7 +32,7 @@ public class WebApiExRateProvider implements ExRateProvider {
         }
         String response;
         try {
-            response = new SimpleApiExecutor().execute(uri);
+            response = apiExecutor.execute(uri);
             return extractExRate(response);
         } catch (IOException e) {
             throw new RuntimeException(e);
