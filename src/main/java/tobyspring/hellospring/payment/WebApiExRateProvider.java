@@ -1,5 +1,6 @@
 package tobyspring.hellospring.payment;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tobyspring.hellospring.exrate.ExRateData;
 
@@ -9,9 +10,7 @@ import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.rmi.RemoteException;
 import java.util.stream.Collectors;
 
 public class WebApiExRateProvider implements ExRateProvider {
@@ -19,31 +18,38 @@ public class WebApiExRateProvider implements ExRateProvider {
     public BigDecimal getExRate(String currency) {
         String url = "https://open.er-api.com/v6/latest/"+ currency;
         // Validate the currency code
+        return runApiForExRate(url);
+    }
+
+    private static BigDecimal runApiForExRate(String url) {
         URL uri;
         try {
             uri = new URL(url);
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
-         String response;
+        String response;
         try {
-            HttpURLConnection connection = (HttpURLConnection) uri.openConnection();
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                response = br.lines().collect(Collectors.joining());
-            }
+            response = executeApi(uri);
+            return extractExRate(response);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            ExRateData data = mapper.readValue(response, ExRateData.class);
-            return data.rates().get("KRW");
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to parse exchange rate data", e);
+    }
+
+    private static BigDecimal extractExRate(String response) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        ExRateData data = mapper.readValue(response, ExRateData.class);
+        return data.rates().get("KRW");
+    }
+
+    private static String executeApi(URL uri) throws IOException {
+        String response;
+        HttpURLConnection connection = (HttpURLConnection) uri.openConnection();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+            response = br.lines().collect(Collectors.joining());
         }
-        // Parse the JSON response
-
-
+        return response;
     }
 
 }
